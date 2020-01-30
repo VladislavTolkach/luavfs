@@ -36,7 +36,7 @@ function wrappers.err(f)
    end
 end
 
-function wrappers.open(f)
+function wrappers.open(f, fs)
    return wrappers.err(function(path, mode)
       assert(type(path) == "string", 
          errutils.wrong_argtype_msg("string", type(path), 1, "open")
@@ -45,39 +45,39 @@ function wrappers.open(f)
          errutils.wrong_argtype_msg("string", type(mode), 2, "open")
       )
 
-      local flag = {r, w, trunc, create, append}
+      local flags = {r, w, trunc, create, append}
       if not mode or mode == "r" then
-         flag.r = true
+         flags.r = true
       elseif mode == "r+" then
-         flag.r = true
-         flag.w = true
+         flags.r = true
+         flags.w = true
       elseif mode == "w" then
-         flag.w = true
-         flag.trunc = true
-         flag.create = true
+         flags.w = true
+         flags.trunc = true
+         flags.create = true
       elseif mode == "w+" then
-         flag.r = true
-         flag.w = true
-         flag.trunc = true
-         flag.create = true
+         flags.r = true
+         flags.w = true
+         flags.trunc = true
+         flags.create = true
       elseif mode == "a" then
-         flag.w = true
-         flag.append = true
-         flag.create = true
+         flags.w = true
+         flags.append = true
+         flags.create = true
       elseif mode == "a+" then
-         flag.r = true
-         flag.w = true
-         flag.append = true
-         flag.create = true
+         flags.r = true
+         flags.w = true
+         flags.append = true
+         flags.create = true
       else
          return nil, errno.EINVAL
       end
 
-      return f(path, flag)
+      return f(fs, path, flags)
    end)
 end
 
-function wrappers.write(f)
+function wrappers.write(f, file)
    return wrappers.err(function(...)
       local stack = {}
       for i, v in ipairs(arg) do
@@ -94,10 +94,69 @@ function wrappers.write(f)
             stack[i] = stack[i] .. table.remove(stack)
          end
       end
-      return f(table.concat(stack))
+
+      return f(file, table.concat(stack))
    end)
 end
 
+local read_format_lookup = {
+   ["*a"] = constants.READ_ALL,
+   ["*l"] = constants.READ_LINE,
+   ["*n"] = constants.READ_NUM,
+}
+
+function wrappers.read(f, file)
+   return wrappers.err(function(format)
+      local flag = constants.READ_ALL
+      local offset
+      if format then
+      elseif type(format) == "number" then
+         if format < 0 then 
+            error(errutils.wrong_arg_msg("invalid format", 1, "read"))
+         end
+         flag = constants.READ_CHUNK 
+         offset = format
+      elseif type(format) == "string" then
+         flag = read_format_lookup[format]
+         if not flag then
+            error(errutils.wrong_arg_msg("invalid format", 1, "read"))
+         end
+      else
+         error(errutils.wrong_argtype_msg(
+            "string or number", type(format), 1, "read")
+         )
+      end
+
+      return f(file, flag, offset)
+   end)
+end
+
+local seek_option_lookup = {
+   ["set"] = constants.SEEK_SET,
+   ["cur"] = constants.SEEK_CUR,
+   ["end"] = constants.SEEK_END,
+}
+
+function wrappers.seek(f, file)
+   return wrappers.err(function(whence, offset)
+      if not whence then 
+         return f(file, constants.SEEK_CUR, 0)
+      end
+
+      local offset = offset or 0
+      assert(type(whence) == "string", 
+         errutils.wrong_argtype_msg("string", type(whence), 1, "seek"))
+      assert(type(offset) == "number", 
+         errutils.wrong_argtype_msg("number", type(offset), 2, "seek"))
+
+      opt = seek_option_lookup[whence]
+      if opt then
+         return f(file, opt, offset)
+      else
+         error(wrong_arg_msg("invalid option '"..whence.."'", 1, "seek"))
+      end
+   end)
+end
 
 return wrappers
 
