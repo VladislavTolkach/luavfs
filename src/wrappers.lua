@@ -5,12 +5,13 @@ local wrappers = {}
 
 function wrappers.arg_check(f, f_name, ...)
    types = arg
-   return function(...)
+   return function(obj, ...)
       for i, v in ipairs(types) do
          assert(v == type(arg[i]), 
             errutils.wrong_argtype_msg(types[i], type(arg[i]), i, f_name)
          )
       end
+      return f(obj, ...)
    end
 end
 
@@ -31,13 +32,17 @@ function wrappers.err(f)
       if ret then
          return ret 
       else
-         return nil, err, errutils.str_error(err)
+         if err then
+            return nil, err, errutils.str_error(err)
+         else
+            return nil
+         end
       end
    end
 end
 
-function wrappers.open(f, fs)
-   return wrappers.err(function(path, mode)
+function wrappers.open(f)
+   return wrappers.err(function(fs, path, mode, ...)
       assert(type(path) == "string", 
          errutils.wrong_argtype_msg("string", type(path), 1, "open")
       )
@@ -73,12 +78,12 @@ function wrappers.open(f, fs)
          return nil, errno.EINVAL
       end
 
-      return f(fs, path, flags)
+      return f(fs, path, flags, ...)
    end)
 end
 
-function wrappers.write(f, file)
-   return wrappers.err(function(...)
+function wrappers.write(f)
+   return wrappers.err(function(file, data) 
       local stack = {}
       for i, v in ipairs(arg) do
          if type(v) == "string" or type(v) == "number" then
@@ -105,17 +110,17 @@ local read_format_lookup = {
    ["*n"] = constants.READ_NUM,
 }
 
-function wrappers.read(f, file)
-   return wrappers.err(function(format)
+function wrappers.read(f)
+   return wrappers.err(function(file, format)
       local flag = constants.READ_ALL
-      local offset
+      local len
       if format then
       elseif type(format) == "number" then
          if format < 0 then 
             error(errutils.wrong_arg_msg("invalid format", 1, "read"))
          end
          flag = constants.READ_CHUNK 
-         offset = format
+         len = format
       elseif type(format) == "string" then
          flag = read_format_lookup[format]
          if not flag then
@@ -127,7 +132,7 @@ function wrappers.read(f, file)
          )
       end
 
-      return f(file, flag, offset)
+      return f(file, flag, len)
    end)
 end
 
@@ -137,8 +142,8 @@ local seek_option_lookup = {
    ["end"] = constants.SEEK_END,
 }
 
-function wrappers.seek(f, file)
-   return wrappers.err(function(whence, offset)
+function wrappers.seek(f)
+   return wrappers.err(function(file, whence, offset)
       if not whence then 
          return f(file, constants.SEEK_CUR, 0)
       end

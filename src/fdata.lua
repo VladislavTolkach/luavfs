@@ -139,7 +139,7 @@ end
 
 function fdata_m.write(fdata, offset, data)
    local data_len = string.len(data)
-   if data_len == 0 then return end
+   if data_len == 0 then return data_len end
    local first_page = math.floor(offset / fdata.page_size) 
    local last_page = math.floor((offset + data_len) / fdata.page_size)
 
@@ -160,27 +160,28 @@ function fdata_m.write(fdata, offset, data)
    local full_page_num = last_page - first_page
    if full_page_num == 0 then
       write_chunk(fdata, first_page, fpoff, data)
-      return
-   end
+   else 
+      write_chunk(fdata, first_page, fpoff, 
+         string.sub(data, 1, fdata.page_size - fpoff)
+      )
+      write_chunk(fdata, last_page, 0, string.sub(data, data_len - lpoff + 1))
 
-   write_chunk(fdata, first_page, fpoff, 
-      string.sub(data, 1, fdata.page_size - fpoff)
-   )
-   write_chunk(fdata, last_page, 0, string.sub(data, data_len - lpoff + 1))
-
-   if full_page_num ~= 1 then
-      local doff = fdata.page_size - fpoff 
-      for i = 0, full_page_num - 2 do
-         if not fdata.page[first_page + i + 1] then
-            fdata.page_count = fdata.page_count + 1
+      if full_page_num ~= 1 then
+         local doff = fdata.page_size - fpoff 
+         for i = 0, full_page_num - 2 do
+            if not fdata.page[first_page + i + 1] then
+               fdata.page_count = fdata.page_count + 1
+            end
+            fdata.page[first_page + i + 1] = string.sub(
+               data,
+               doff + fdata.page_size * i + 1,
+               doff + fdata.page_size * (i + 1)
+            )
          end
-         fdata.page[first_page + i + 1] = string.sub(
-            data,
-            doff + fdata.page_size * i + 1,
-            doff + fdata.page_size * (i + 1)
-         )
       end
    end
+   
+   return data_len
 end
 
 return fdata_m

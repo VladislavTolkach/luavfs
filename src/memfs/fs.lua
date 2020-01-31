@@ -13,32 +13,11 @@ end
 function Memfs:init_fs()
 end
 
-function Memfs:open(path, mode)
-   local rw_mode, append, trunc, create
-   if not mode or mode == "r" then
-      rw_mode = file_m.READ
-   elseif mode == "r+" then
-      rw_mode = file_m.READ_WRITE
-   elseif mode == "w" then
-      rw_mode = file_m.WRITE
-      trunc = true
-      create = true
-   elseif mode == "w+" then
-      rw_mode = file_m.READ_WRITE
-      trunc = true
-      create = true
-   elseif mode == "a" then
-      rw_mode = file_m.WRITE
-      append = true
-      create = true
-   elseif mode == "a+" then
-      rw_mode = file_m.READ_WRITE
-      append = true
-      create = true
-   else
-      return nil, errno.EINVAL
-   end
+Memfs.open = wrappers.open(function(self, path, flag)
+   local file 
+end)
 
+function a()
    -- if the file exists, so returning it
    local file
    local nd, err = namei_m.path_lookup(fs, pathname)

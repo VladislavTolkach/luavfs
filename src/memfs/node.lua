@@ -6,7 +6,7 @@ local function new_node(fs, mode)
    local node = {}
    node.mode = mode
    node.nlink = 1
-   t = time()
+   local t = time()
    node.ctime = t
    node.atime = t
    node.mtime = t
@@ -16,7 +16,6 @@ local function new_node(fs, mode)
       node.childs = {}
    elseif stat.is_reg(mode) then
       node.data = fdata_m.new(fs.cfg.page_size)
-      node.size = 0
    elseif stat.is_tbl(mode) then
       node.data = {}
    end
