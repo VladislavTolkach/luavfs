@@ -91,8 +91,19 @@ local function read_page(fdata, pno)
 end
 
 function fdata_m.read(fdata, offset, length)
+   if offset >= fdata.size then
+      return nil
+   end
+   
    local first_page = math.floor(offset / fdata.page_size) 
-   local last_page = math.floor((offset + length) / fdata.page_size)
+   local last_page 
+   local endpos = offset + length
+   if endpos > fdata.size then
+      endpos = fdata.size
+      last_page = fdata.last_page
+   else
+      last_page = math.floor(endpos / fdata.page_size)
+   end
 
    local full_page_num = last_page - first_page
    if full_page_num == 0 then
@@ -101,7 +112,7 @@ function fdata_m.read(fdata, offset, length)
    end
 
    local fpoff = offset - first_page * fdata.page_size
-   local lpoff = offset + length - last_page * fdata.page_size
+   local lpoff = endpos - last_page * fdata.page_size
    local fpchunk = read_chunk(fdata, first_page, fpoff)
    local lpchunk = read_chunk(fdata, last_page, 0, lpoff)
    if full_page_num == 1 then
