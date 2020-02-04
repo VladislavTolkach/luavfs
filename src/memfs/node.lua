@@ -2,7 +2,7 @@ local time = require("src.time")
 
 local node_m = {}
 
-local function new_node(fs, mode)
+local function new_node(fs, mode, page_size)
    local node = {}
    node.mode = mode
    node.nlink = 1
@@ -15,14 +15,15 @@ local function new_node(fs, mode)
    if stat.is_dir(mode) then
       node.childs = {}
    elseif stat.is_reg(mode) then
-      node.data = fdata_m.new(fs.cfg.page_size)
+      local page_size = page_size or fs._cfg.page_size
+      node.data = fdata_m.new(page_size)
    elseif stat.is_tbl(mode) then
       node.data = {}
    end
    return node
 end
 
-function node_m.add_node(fs, dir_node, name, mode)
+function node_m.add_node(fs, dir_node, name, mode, page_size)
    local node = new_node(fs, mode) 
    dir_node.childs[name] = node
    return node

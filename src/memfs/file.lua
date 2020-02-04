@@ -1,3 +1,4 @@
+local errno = require("errno")
 local fdata = require("fdata")
 
 local file_m = {}
@@ -87,10 +88,6 @@ function file_m.new(fs, node, flags, page_size)
    file._fd = fd
 
    local data = file._node.data
-   if flags.create then
-      local page_size = page_size or fs._cfg.page_size
-      data = fdata.new(page_size)
-   end
    if flags.trunc then
       fdata.truncate(data, 0)
    end

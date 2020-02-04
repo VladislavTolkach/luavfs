@@ -13,57 +13,39 @@ end
 function Memfs:init_fs()
 end
 
-Memfs.open = wrappers.open(function(self, path, flag)
-   local file 
+Memfs.open = wrappers.open(function(self, path, flags, page_size)
+   local file
+
+   local path = path_m.norm(path)
+   local basename = path_m.basename(path)
+   local dir_node, err = node_m.find_node(self, path_m.dirname(path))  
+   if err then 
+      return nil, err
+   end
+
+   local node, err = node_m.lookup(dir_node, basename)
+   if node then
+      if stat.is_dir(node) then
+         return nil, errno.EISDIR
+      else
+         return file_m.new(self, node, flags)
+      end
+   end
+
+   if not flags.create then
+      return nil, err
+   end
+
+   if path_m.is_empty(basename) then
+      return nil, EINVAL
+   end
+      
+   node = node_m.add_node(self, dir_node, basename, constants.DIR, 
+      page_size
+   )
+   return file_m.new(self, node, flags)
 end)
 
-function a()
-   -- if the file exists, so returning it
-   local file
-   local nd, err = namei_m.path_lookup(fs, pathname)
-   if nd then
-      if nd.last_is_dir then 
-         inode_m.put_inode(nd.inode)
-         return nil, errno.EISDIR
-      end
-      file, err = file_m.new_file(fs, nd.inode, rw_mode, append, trunc)
-      if not file then
-         inode_m.put_inode(nd.inode)
-         return nil, err
-      end
-      return file
-   end
-
-   if not create then
-      return nil, err
-   end
-
-   -- if the file does not exist and "create" flag is set, 
-   -- then we are trying to find a directory where the file will be created
-   nd, err = namei_m.path_lookup(fs, pathname, true)
-   if not nd then
-      return nil, err
-   end
-
-   -- check that the name of the new file does not match with: "", ".", ".."
-   if not nd.last_name then
-      inode_m.put_inode(nd.inode)
-      return nil, errno.EINVAL
-   end
-
-   local inode, err = dir_m.create(nd.inode, nd.last_name, nil)
-   inode_m.put_inode(nd.inode)
-   if not inode then 
-      return nil, err
-   end
-
-   file, err = file_m.new_file(fs, inode, rw_mode, append, trunc)
-   if not file then
-      inode_m.put_inode(inode)
-      return nil, err
-   end
-   return file
-end
 
 function Memfs:mkdir(path)
    path = path_m.normalize(path)
