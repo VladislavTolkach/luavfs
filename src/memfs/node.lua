@@ -40,9 +40,9 @@ function node_m.lookup(dir_node, name)
 end
 
 function node_m.find_node(fs, path)
-   local node = fs.root_node
+   local node = fs._root
    local err
-   for name in path:iterate() do
+   for name in path_m.iterate(path) do
       if not stat.is_dir(node.mode) then
          err = errno.ENOTDIR
          break
@@ -51,6 +51,7 @@ function node_m.find_node(fs, path)
       node = node.clilds[name]
       if not node then 
          err = errno.ENOENT
+         break
       end
    end
 
@@ -58,19 +59,6 @@ function node_m.find_node(fs, path)
       return nil, err
    else
       return node
-   end
-end
-
-function node_m.find_dir_node(fs, path)
-   local node, err = node_m.find_node(fs, path)
-   if err then 
-      return nil, err
-   else
-      if not stat.is_dir(node.mode) then
-         return nil, errno.ENOTDIR
-      else 
-         return node
-      end
    end
 end
 
