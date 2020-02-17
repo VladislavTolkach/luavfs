@@ -5,8 +5,7 @@ local node_m = {}
 local function new_node(fs, mode, page_size)
    local node = {}
    node.mode = mode
-   node.nlink = 1
-   local t = time()
+   node.nlink = 1 local t = time()
    node.ctime = t
    node.atime = t
    node.mtime = t
@@ -40,7 +39,7 @@ function node_m.lookup(dir_node, name)
 end
 
 function node_m.find_node(fs, path)
-   local node = fs._root
+   local node = fs._stor.root
    local err
    for name in path_m.iterate(path) do
       if not stat.is_dir(node.mode) then

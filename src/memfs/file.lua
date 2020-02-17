@@ -63,11 +63,11 @@ local function seek(file, opt, offset)
 end
 
 local function badf(file, ...)
-   return nil, errno.EBADF, errutils.str_error(errno.EBADF)
+   return nil, errno.EBADF, errno.str_error(errno.EBADF)
 end
 
 local function close(file)
-   file._fs[file._fd] = nil
+   file._fs._files[file._fd] = nil
    file._node = nil
    file._fs = nil
    file._fd = nil

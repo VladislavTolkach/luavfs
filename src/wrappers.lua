@@ -19,7 +19,7 @@ function wrappers.err_noret(f)
    return function(...)
       local err = f(...)
       if err then
-         return err, errutils.str_error(err)
+         return err, errno.str_error(err)
       else
          return errno.OK
       end
@@ -33,7 +33,7 @@ function wrappers.err(f)
          return ret 
       else
          if err then
-            return nil, err, errutils.str_error(err)
+            return nil, err, errno.str_error(err)
          else
             return nil
          end

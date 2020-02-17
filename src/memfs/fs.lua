@@ -7,11 +7,6 @@ local memfs = {}
 
 local Memfs = {}
 
-function Memfs:create_fs()
-end
-
-function Memfs:init_fs()
-end
 
 Memfs.open = wrappers.open(function(self, path, flags, page_size)
    local file
@@ -86,7 +81,17 @@ function Memfs:rmdir(path)
 end
 
 
-   
+function memfs.new(storage, config)
+   local fs = {}
+   fs._stor = storage
+   fs._files = {}
+   fs._cfg = config --TODO
+   setmetatable(fs, {__index = Memfs})
+   return fs
+end
+
+
+return memfs   
 
 
 
