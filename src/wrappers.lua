@@ -1,3 +1,5 @@
+local constants = require("constants")
+local errno = require("errno")
 local errutils = require("errutils")
 
 local wrappers = {}

@@ -1,7 +1,10 @@
 local constants = require("constants")
-local node = require("memfs.node")
+local errno = require("errno")
 local path_m = require("path")
 local time = require("time")
+local wrappers = require("wrappers")
+local node = require("memfs.node")
+local file_m = require("memfs.file")
 
 local memfs = {}
 
