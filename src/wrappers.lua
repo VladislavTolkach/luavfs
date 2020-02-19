@@ -1,16 +1,18 @@
 local constants = require("constants")
 local errno = require("errno")
 local errutils = require("errutils")
+--local du = require("debugutils")
 
 local wrappers = {}
 
 
 function wrappers.arg_check(f, f_name, ...)
-   types = arg
+   local types = {...}
    return function(obj, ...)
+      local args = {...}
       for i, v in ipairs(types) do
-         assert(v == type(arg[i]), 
-            errutils.wrong_argtype_msg(types[i], type(arg[i]), i, f_name)
+         assert(v == type(args[i]), 
+            errutils.wrong_argtype_msg(types[i], type(args[i]), i, f_name)
          )
       end
       return f(obj, ...)
