@@ -38,9 +38,13 @@ Memfs.open = wrappers.open(function(self, path, flags, page_size)
       return nil, errno.EINVAL
    end
       
-   node = node_m.add_node(self._stor, dir_node, basename, constants.DIR, 
+   node, err  = node_m.add_node(self._stor, dir_node, basename, constants.REG, 
       page_size
    )
+   if err then 
+      return err
+   end
+
    return file_m.new(self, node, flags)
 end)
 
@@ -62,8 +66,14 @@ local function mkdir(self, path)
       return errno.EEXIST
    end
 
-   _, err = node_m.add_node(self._stor, dir_node, basename, constants.DIR)
-   return err 
+   local n, err = node_m.add_node(self._stor, dir_node, basename, constants.DIR)
+   if n then 
+      local t = time()
+      dir_node.ctime = t
+      dir_node.mtime = t
+   else
+      return err 
+   end
 end
 
 Memfs.mkdir = wrappers.err_noret(wrappers.arg_check(mkdir, "mkdir", "string"))
@@ -80,35 +90,48 @@ local function iter_dir(self, path)
       return nil, errno.ENOTDIR
    end
 
+   node.atime = time()
    return node_m.iterate_names(node)
 end
 
 Memfs.iter_dir = wrappers.err(wrappers.arg_check(iter_dir, "iter_dir", "string"))
 
 
-function Memfs:rmdir(path)
-   local parent_node, err = node.find_parent_dir(self, path)
-   if not parent_node then return err end
+local function rmdir(self, path)
+   path = path_m.normalize(path)
+   local dirname, basename = path_m.split(path)
+   local dir_node, err = node_m.find_node(self._stor, dirname)
+   if err then return err end
+   if not stat.is_dir(dir_node.mode) then
+      return errno.ENOTDIR
+   end
 
+   local victim, err = node_m.lookup(dir_node, basename)
+   if err then return err end
+   if not stat.is_dir(victim.mode) then
+      return errno.ENOTDIR
+   end
 
-   local name = path:last()
-   local victim_node, err = node.lookup(parent_node, name)
-   if err then 
+   if node_m.is_empty(victim) then
       return errno.ENOTEMPTY
    end
 
-   if victim_node == self.stor.root then
+   if victim == self._stor.root then
       return errno.EBUSY
    end
-    
-   -- TODO symlink
-
    
-   err = node.remove_node(self, parent_node, name)
-   -- TODO handle times ?
-   return err
+   err = node_m.remove_node(dir_node, basename)
+   if not err then
+      local t = time()
+      dir_node.ctime = t
+      dir_node.mtime = t
+      victim.ctime = t
+   else
+      return err
+   end
 end
 
+Memfs.rmdir = wrappers.err_noret(wrappers.arg_check(rmdir, "rmdir", "string"))
 
 local function create_storage(stor)
    stor.root = node_m.root() 

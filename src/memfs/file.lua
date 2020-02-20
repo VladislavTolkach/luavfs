@@ -2,6 +2,8 @@ local constants = require("constants")
 local errno = require("errno")
 local fdata = require("fdata")
 local time = require("time")
+local utils = require("utils")
+local wrappers = require("wrappers")
 
 local file_m = {}
 
@@ -10,15 +12,16 @@ local function write(file, data)
    local n = file._node
    local len = fdata.write(n.data, file._pos, data)
    file._pos = file._pos + len
-   n.ctime = time()
-   n.mtime = time()
+   local t = time()
+   n.ctime = t
+   n.mtime = t
    return len
 end
 
 local function append(file, data)
    local n = file._node
    local len = fdata.write(n.data, n.data.size, data)
-   t = time()
+   local t = time()
    n.ctime = t
    n.mtime = t
    return len
@@ -81,17 +84,17 @@ local function close(file)
    return true
 end
 
-function file_m.new(fs, node, flags, page_size)
+function file_m.new(fs, node, flags) 
    local fd = utils.find_free_index(fs._files)
    local file = {}
    fs._files[fd] = file
    file._node = node
    file._fs = fs
    file._fd = fd
+   file._pos = 0
 
-   local data = file._node.data
    if flags.trunc then
-      fdata.truncate(data, 0)
+      fdata.truncate(node.data, 0)
    end
 
    -- Set write func

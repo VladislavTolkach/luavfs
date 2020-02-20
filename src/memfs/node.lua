@@ -15,8 +15,6 @@ local function new_node(mode, page_size)
    node.ctime = t
    node.atime = t
    node.mtime = t
-   -- node.childs = nil
-   -- node.data = nil
    if stat.is_dir(mode) then
       node.childs = {}
    elseif stat.is_reg(mode) then
@@ -62,6 +60,10 @@ function node_m.iterate_names(dir_node)
    end
 end
 
+function node_m.is_empty(dir_node)
+   return next(dir_node.childs)
+end
+
 function node_m.find_node(stor, path)
    local node = stor.root
    if path_m.is_root(path) then
@@ -75,7 +77,7 @@ function node_m.find_node(stor, path)
          break
       end
 
-      node = node.clilds[name]
+      node = node_m.lookup(node, name)
       if not node then 
          err = errno.ENOENT
          break

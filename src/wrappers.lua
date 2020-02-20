@@ -87,9 +87,9 @@ function wrappers.open(f)
 end
 
 function wrappers.write(f)
-   return wrappers.err(function(file, data) 
+   return wrappers.err(function(file, ...) 
       local stack = {}
-      for i, v in ipairs(arg) do
+      for i, v in ipairs({...}) do
          if type(v) == "string" or type(v) == "number" then
             table.insert(stack, tostring(v))
          else
