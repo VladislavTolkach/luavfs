@@ -19,8 +19,6 @@ local function new_node(mode, page_size)
       node.childs = {}
    elseif stat.is_reg(mode) then
       node.data = fdata_m.new(page_size)
-   elseif stat.is_tbl(mode) then
-      node.data = {}
    end
    return node
 end

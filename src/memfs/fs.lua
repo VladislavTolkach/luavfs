@@ -79,7 +79,7 @@ end
 Memfs.mkdir = wrappers.err_noret(wrappers.arg_check(mkdir, "mkdir", "string"))
 
 
-local function iter_dir(self, path)
+local function iterdir(self, path)
    path = path_m.normalize(path)
    local node, err = node_m.find_node(self._stor, path)
    if not node then 
@@ -94,7 +94,7 @@ local function iter_dir(self, path)
    return node_m.iterate_names(node)
 end
 
-Memfs.iter_dir = wrappers.err(wrappers.arg_check(iter_dir, "iter_dir", "string"))
+Memfs.iterdir = wrappers.err(wrappers.arg_check(iterdir, "iterdir", "string"))
 
 
 local function rmdir(self, path)
@@ -132,6 +132,34 @@ local function rmdir(self, path)
 end
 
 Memfs.rmdir = wrappers.err_noret(wrappers.arg_check(rmdir, "rmdir", "string"))
+
+local function stat(path)
+   path = path_m.normalize(path)
+   local node, err = node_m.find_node(self._stor, path)
+   if node then
+      -- TODO 
+      return {
+         dev = nil,
+         ino = nil,
+         mode = node.mode,
+         nlink = node.nlink,
+         uid = nil,
+         gid = nil,
+         rdev = nil,
+         access = node.atime,
+         modification = node.mtime,
+         change = node.ctime,
+         size = node.data.size,
+         permissions = nil,
+         block = nil,
+         blksize = nil,
+      }
+   else
+      return nil, err
+   end
+end
+
+Memfs.rmdir = wrappers.err(wrappers.arg_check(stat, "stat", "string"))
 
 local function create_storage(stor)
    stor.root = node_m.root() 
