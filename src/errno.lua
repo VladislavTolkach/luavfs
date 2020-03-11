@@ -4,6 +4,7 @@ local errno = {
    EBADF          = 9,
    EBUSY          = 16,
    EEXIST         = 17,
+   EXDEV          = 18,
    ENOTDIR        = 20,
    EISDIR         = 21,
    EINVAL         = 22,
@@ -21,6 +22,7 @@ local string_error = {
    [errno.EBADF]        = "Bad file number",
    [errno.EBUSY]        = "Device or resource busy",
    [errno.EEXIST]       = "File exists",
+   [errno.EXDEV]        = "Cross-device link",
    [errno.ENOTDIR]      = "Not a directory",
    [errno.EISDIR]       = "Is a directory",
    [errno.EINVAL]       = "Invalid argument",
@@ -37,7 +39,9 @@ function errno.str_error(err_code)
 end
 
 function errno.full_error(err_code)
-   return err_code, string_error[err_code]
+   if err_code then
+      return err_code, string_error[err_code]
+   end
 end
 
 return errno

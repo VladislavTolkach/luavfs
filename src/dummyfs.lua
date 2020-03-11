@@ -22,9 +22,10 @@ DummyFs.unlink = noret
 DummyFs.iterdir = ret
 DummyFs.opendir = ret
 
+local fs = setmetatable({}, {__index = DummyFs})
 
 function DummyFs.new()
-   return DummyFs
+   return fs
 end 
 
 setmetatable(DummyFs, {

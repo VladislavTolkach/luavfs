@@ -11,7 +11,7 @@ function wrappers.arg_check(f, f_name, ...)
    return function(obj, ...)
       local args = {...}
       for i, v in ipairs(types) do
-         errutils.type_check(args[i], v, i, f_name)
+         errutils.type_check(f_name, i, args[i], v)
       end
       return f(obj, ...)
    end

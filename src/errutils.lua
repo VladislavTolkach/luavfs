@@ -14,7 +14,7 @@ function errutils.wrong_argtype_msg(func_name, arg_no, real_type, expected_type,
             " expected, got "..real_type..")"
 end
 
-function errutils.type_check(func_name, arn_no, var, expected_type) 
+function errutils.type_check(func_name, arg_no, var, expected_type) 
    assert(type(var) == expected_type, 
       errutils.wrong_argtype_msg(func_name, arg_no, type(var), expected_type)
    )
