@@ -7,6 +7,8 @@ local wrappers = require("wrappers")
 local node_m = require("memfs.node")
 local file_m = require("memfs.file")
 
+local full_error = errno.full_error
+
 local memfs = {}
 
 local Memfs = {}
@@ -18,31 +20,31 @@ Memfs.open = wrappers.open(function(self, path, flags, page_size)
    local basename = path_m.basename(path)
    local dir_node, err = node_m.find_node(self._stor, path_m.dirname(path))  
    if err then 
-      return nil, err
+      return full_error(err)
    end
 
    local node, err = node_m.lookup(dir_node, basename)
    if node then
       if stat.is_dir(node.mode) then
-         return nil, errno.EISDIR
+         return full_error(errno.EISDIR)
       else
          return file_m.new(self, node, flags)
       end
    end
 
    if not flags.create then
-      return nil, err
+      return full_error(err)
    end
 
    if path_m.is_empty(basename) then
-      return nil, errno.EINVAL
+      return full_error(errno.EINVAL)
    end
       
    node, err  = node_m.add_node(self._stor, dir_node, basename, constants.REG, 
       page_size
    )
    if err then 
-      return err
+      return full_error(err)
    end
 
    return file_m.new(self, node, flags)
@@ -54,16 +56,16 @@ local function mkdir(self, path)
    local dirname, basename = path_m.split(path)
    local dir_node, err = node_m.find_node(self._stor, dirname)
    if not dir_node then 
-      return err 
+      return full_error(err) 
    end
 
    if path_m.is_empty(basename) then
-      return errno.EINVAL
+      return full_error(errno.EINVAL)
    end
 
    local _, err = node_m.lookup(dir_node, basename)
    if not err then
-      return errno.EEXIST
+      return full_error(errno.EEXIST)
    end
 
    local n, err = node_m.add_node(self._stor, dir_node, basename, constants.DIR)
@@ -71,8 +73,9 @@ local function mkdir(self, path)
       local t = time()
       dir_node.ctime = t
       dir_node.mtime = t
+      return true
    else
-      return err 
+      return full_error(err)
    end
 end
 
@@ -83,11 +86,11 @@ local function iterdir(self, path)
    path = path_m.normalize(path)
    local node, err = node_m.find_node(self._stor, path)
    if not node then 
-      return nil, err
+      return full_error(err)
    end
 
    if not stat.is_dir(node.mode) then
-      return nil, errno.ENOTDIR
+      return full_error(errno.ENOTDIR)
    end
 
    node.atime = time()
@@ -101,23 +104,27 @@ local function rmdir(self, path)
    path = path_m.normalize(path)
    local dirname, basename = path_m.split(path)
    local dir_node, err = node_m.find_node(self._stor, dirname)
-   if err then return err end
+   if err then 
+      return full_error(err)
+   end
    if not stat.is_dir(dir_node.mode) then
-      return errno.ENOTDIR
+      return full_error(errno.ENOTDIR)
    end
 
    local victim, err = node_m.lookup(dir_node, basename)
-   if err then return err end
+   if err then 
+      return full_error(err)
+   end
    if not stat.is_dir(victim.mode) then
-      return errno.ENOTDIR
+      return full_error(errno.ENOTDIR)
    end
 
    if node_m.is_empty(victim) then
-      return errno.ENOTEMPTY
+      return full_error(errno.ENOTEMPTY)
    end
 
    if victim == self._stor.root then
-      return errno.EBUSY
+      return full_error(errno.EBUSY)
    end
    
    err = node_m.remove_node(dir_node, basename)
@@ -126,8 +133,9 @@ local function rmdir(self, path)
       dir_node.ctime = t
       dir_node.mtime = t
       victim.ctime = t
+      return true
    else
-      return err
+      return full_error(err)
    end
 end
 
@@ -155,7 +163,7 @@ local function stat(path)
          blksize = nil,
       }
    else
-      return nil, err
+      return full_error(err)
    end
 end
 

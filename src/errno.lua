@@ -39,9 +39,7 @@ function errno.str_error(err_code)
 end
 
 function errno.full_error(err_code)
-   if err_code then
-      return err_code, string_error[err_code]
-   end
+   return nil, err_code, errno.str_error(err_code)
 end
 
 return errno

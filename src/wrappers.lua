@@ -17,21 +17,8 @@ function wrappers.arg_check(f, f_name, ...)
    end
 end
 
-function wrappers.err_noret(f)
-   return function(...)
-      return errno.full_error(f(...))
-   end
-end
-
-function wrappers.err(f)
-   return function(...)
-      local ret, err = f(...)
-      return ret, errno.full_error(err)
-   end
-end
-
 function wrappers.open(f)
-   return wrappers.err(function(fs, path, mode, ...)
+   return function(fs, path, mode, ...)
       errutils.type_check("open", 1, path, "string")
       errutils.type_check("open", 2, mode, "string")
 
@@ -60,15 +47,15 @@ function wrappers.open(f)
          flags.append = true
          flags.create = true
       else
-         return nil, errno.EINVAL
+         return errno.full_error(errno.EINVAL)
       end
 
       return f(fs, path, flags, ...)
-   end)
+   end
 end
 
 function wrappers.write(f)
-   return wrappers.err(function(file, ...) 
+   return function(file, ...) 
       local stack = {}
       for i, v in ipairs({...}) do
          if type(v) == "string" or type(v) == "number" then
@@ -88,7 +75,7 @@ function wrappers.write(f)
       end
 
       return f(file, table.concat(stack))
-   end)
+   end
 end
 
 local read_format_lookup = {
@@ -98,7 +85,7 @@ local read_format_lookup = {
 }
 
 function wrappers.read(f)
-   return wrappers.err(function(file, format)
+   return function(file, format)
       local flag = constants.READ_ALL
       local len
       if format then
@@ -120,7 +107,7 @@ function wrappers.read(f)
       end
 
       return f(file, flag, len)
-   end)
+   end
 end
 
 local seek_option_lookup = {
@@ -130,7 +117,7 @@ local seek_option_lookup = {
 }
 
 function wrappers.seek(f)
-   return wrappers.err(function(file, whence, offset)
+   return function(file, whence, offset)
       if not whence then 
          return f(file, constants.SEEK_CUR, 0)
       end
@@ -145,7 +132,7 @@ function wrappers.seek(f)
       else
          error(wrong_arg_msg("seek", 1, "invalid option '"..whence.."'"))
       end
-   end)
+   end
 end
 
 return wrappers
