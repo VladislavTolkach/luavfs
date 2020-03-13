@@ -39,6 +39,10 @@ function path_m.iterate(path)
    return string.gmatch(path, '[^/]+')
 end
 
+function path_m.root()
+   return "/"
+end
+
 function path_m.is_dir(path)
    return (string.sub(path, -1) == "/")
 end

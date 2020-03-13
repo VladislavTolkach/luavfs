@@ -1,5 +1,6 @@
 local errno = require("errno")
 local errutils = require("errutils")
+local utils = require("utils")
 local path_m = require("path")
 
 local WrapFs = {}
@@ -108,10 +109,6 @@ function WrapFs.new(fs)
    return setmetatable(wrapfs, {__index = WrapFs})
 end
 
-setmetatable(WrapFs, {
-   __call = function(cls, ...)
-      return cls.new(...)
-   end,
-})
+utils.make_callable(WrapFs, WrapFs.new)
 
 return WrapFs
