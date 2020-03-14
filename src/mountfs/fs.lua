@@ -10,10 +10,6 @@ setmetatable(MountFs, {__index = WrapFs})
 
 
 local function find_mountpoint(self, path)
-   if path_m.is_root(path) then
-      return self._fs, path
-   end
-
    local node = self._mount_root_node
    local mp = node
    for entry in path_m.iterate(path) do
@@ -55,9 +51,12 @@ function MountFs:_delegate(path)
    end
 end
 
-function MountFs:mount(path, mounded_fs, opt)
+function MountFs:mount(path, mounted_fs, opt)
    -- TODO type check, check fs, opt, overlap mount, ...
-   path = path_m.undir(path)
+   errutils.type_check("mount", 1, path, "string")
+   errutils.type_check("mount", 2, mounted_fs, "table")
+   errutils.type_check("mount", 3, opt, "table")
+   path = path_m.undir(path_m.normalize(path))
    local fs, rel_path = self._delegate(path)
    local st, err = fs:stat(rel_path)
    if not st then
@@ -70,15 +69,21 @@ function MountFs:mount(path, mounded_fs, opt)
 
    local mp = find_mountpoint(self, path)
    if path_m.is_same(mp.path, path) then 
-      return errno.full_error(errno.EBUSY)
+      if path_m.is_root(mp.path) and self._allow_remount_rootfs then
+         mp.fs = mounted_fs
+         self._allow_remount_rootfs = false
+         return true
+      else
+         return errno.full_error(errno.EBUSY)
+      end
    else
-      add_mountpoint(self, mounded_fs, rel_path, mp)
+      add_mountpoint(self, mounted_fs, rel_path, mp)
       return true
    end
 end
 
 function MountFs.new(root_fs)
-   local root_fs = root_fs or DummyFs()
+   local fs = root_fs or DummyFs()
    local mountfs = {
       _fs = root_fs,
       _mount_root_node = {
@@ -88,6 +93,11 @@ function MountFs.new(root_fs)
       },
       _is_single_fs = true,
    }
+
+   if root_fs then 
+      mountfs._allow_remount_rootfs = true
+   end
+
    setmetatable(mountfs, {__index = MountFs})
 end
 
