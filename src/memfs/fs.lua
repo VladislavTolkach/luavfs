@@ -1,20 +1,19 @@
 local constants = require("constants")
 local errno = require("errno")
+local utils = require("utils")
 local stat = require("stat")
 local path_m = require("path")
 local time = require("time")
 local wrappers = require("wrappers")
 local node_m = require("memfs.node")
 local file_m = require("memfs.file")
+local WrapFs = require("wrapfs")
 
 local full_error = errno.full_error
 
-local memfs = {}
+local MemFs = {}
 
-local Memfs = {}
-
-
-Memfs.open = wrappers.open(function(self, path, flags, page_size)
+MemFs.open = wrappers.open(function(self, path, flags, page_size)
    local file
    path = path_m.normalize(path)
    local basename = path_m.basename(path)
@@ -39,7 +38,10 @@ Memfs.open = wrappers.open(function(self, path, flags, page_size)
    if path_m.is_empty(basename) then
       return full_error(errno.EINVAL)
    end
-      
+     
+   if type(page_size) ~= "number" then
+      page_size = nil
+   end
    node, err  = node_m.add_node(self._stor, dir_node, basename, constants.REG, 
       page_size
    )
@@ -50,8 +52,7 @@ Memfs.open = wrappers.open(function(self, path, flags, page_size)
    return file_m.new(self, node, flags)
 end)
 
-
-local function mkdir(self, path)
+function MemFs:mkdir(path)
    path = path_m.normalize(path)
    local dirname, basename = path_m.split(path)
    local dir_node, err = node_m.find_node(self._stor, dirname)
@@ -79,10 +80,7 @@ local function mkdir(self, path)
    end
 end
 
-Memfs.mkdir = wrappers.err_noret(wrappers.arg_check(mkdir, "mkdir", "string"))
-
-
-local function iterdir(self, path)
+function MemFs:iterdir(path)
    path = path_m.normalize(path)
    local node, err = node_m.find_node(self._stor, path)
    if not node then 
@@ -97,10 +95,7 @@ local function iterdir(self, path)
    return node_m.iterate_names(node)
 end
 
-Memfs.iterdir = wrappers.err(wrappers.arg_check(iterdir, "iterdir", "string"))
-
-
-local function rmdir(self, path)
+function MemFs:rmdir(path)
    path = path_m.normalize(path)
    local dirname, basename = path_m.split(path)
    local dir_node, err = node_m.find_node(self._stor, dirname)
@@ -139,9 +134,7 @@ local function rmdir(self, path)
    end
 end
 
-Memfs.rmdir = wrappers.err_noret(wrappers.arg_check(rmdir, "rmdir", "string"))
-
-local function stat(path)
+function MemFs:stat(path)
    path = path_m.normalize(path)
    local node, err = node_m.find_node(self._stor, path)
    if node then
@@ -167,8 +160,6 @@ local function stat(path)
    end
 end
 
-Memfs.rmdir = wrappers.err(wrappers.arg_check(stat, "stat", "string"))
-
 local function create_storage(stor)
    stor.root = node_m.root() 
    stor.cfg = {}
@@ -176,17 +167,16 @@ local function create_storage(stor)
    return stor
 end
 
-function memfs.new(storage, config)
+function MemFs.new(storage, config)
    local fs = {}
    fs._stor = create_storage(storage)
    fs._files = {}
    fs._cfg = config --TODO
-   setmetatable(fs, {__index = Memfs})
-   return fs
+   setmetatable(fs, {__index = MemFs})
+   return WrapFs(fs)
 end
 
-
-return memfs   
-
+utils.make_callable(MemFs, MemFs.new)
 
 
+return MemFs

@@ -19,9 +19,6 @@ end
 
 function wrappers.open(f)
    return function(fs, path, mode, ...)
-      errutils.type_check("open", 1, path, "string")
-      errutils.type_check("open", 2, mode, "string")
-
       local flags = {r, w, trunc, create, append}
       if not mode or mode == "r" then
          flags.r = true
