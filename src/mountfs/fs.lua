@@ -3,6 +3,7 @@ local utils = require("utils")
 local stat = require("stat")
 local path_m = require("path")
 local WrapFs = require("wrapfs")
+local FsBase = require("fsbase")
 
 local MountFs = {}
 
@@ -78,12 +79,12 @@ function MountFs:mount(path, mounted_fs, opt)
       end
    else
       add_mountpoint(self, mounted_fs, rel_path, mp)
+      self._is_single_fs = false
       return true
    end
 end
 
 function MountFs.new(root_fs)
-   local fs = root_fs or DummyFs()
    local mountfs = {
       _fs = root_fs,
       _mount_root_node = {
@@ -94,11 +95,12 @@ function MountFs.new(root_fs)
       _is_single_fs = true,
    }
 
-   if root_fs then 
+   if not root_fs then 
+      mountfs._fs = setmetatable({}, {__index = FsBase})
       mountfs._allow_remount_rootfs = true
    end
 
-   setmetatable(mountfs, {__index = MountFs})
+   return setmetatable(mountfs, {__index = MountFs})
 end
 
 utils.make_callable(MountFs, MountFs.new)

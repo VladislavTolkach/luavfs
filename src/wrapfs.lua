@@ -2,8 +2,10 @@ local errno = require("errno")
 local errutils = require("errutils")
 local utils = require("utils")
 local path_m = require("path")
+local FsBase = require("fsbase")
 
 local WrapFs = {}
+setmetatable(WrapFs, {__index = FsBase})
 
 function WrapFs:access(path, mode)
    errutils.type_check("access", 1, path, "string")
