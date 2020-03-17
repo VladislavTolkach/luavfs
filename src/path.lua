@@ -47,26 +47,25 @@ function path_m.undir(path)
    return path
 end
 
-function path_m.frombase(path1, path2)
-   if path_m.is_same(path1, path2) then
+function path_m.frombase(base, path)
+   if path_m.is_same(base, path) then
       return path_m.root()
    else
-      local p2_iter = path_m.iterate(path2)
-      for entry in path_m.iterate(path1) do
-         print(entry)
-         if entry ~= p2_iter() then
+      local path_iter = path_m.iterate(path)
+      for entry in path_m.iterate(base) do
+         if entry ~= path_iter() then
             return nil
          end
       end
 
       local t = {}
-      local entry = p2_iter()
+      local entry = path_iter()
       while entry do
          table.insert(t, entry)
-         entry = p2_iter()
+         entry = path_iter()
       end
       local res = "/" .. table.concat(t, "/")
-      if path_m.is_dir(path2) then
+      if path_m.is_dir(path) then
          res = path_m.dir(res)
       end
       return res
