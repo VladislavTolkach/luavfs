@@ -1,5 +1,15 @@
 local path_m = {}
 
+function path_m.is_valid(path)
+   if not string.find(path, "\n") then
+      return true
+   end
+end
+
+function path_m.is_empty(path)
+   return ((path == "") or not path)
+end
+
 function path_m.normalize(path)
    local stack = {}
    for entry in path_m.iterate(path) do
@@ -20,6 +30,7 @@ function path_m.normalize(path)
    end
 end
 
+-- Path should be normalized
 function path_m.basename(path)
    return string.match(path, '([^/]+)$')
 end
@@ -86,10 +97,6 @@ end
 
 function path_m.is_root(path)
    return (path == "/")
-end
-
-function path_m.is_empty(path)
-   return ((path == "") or not path)
 end
 
 function path_m.is_same(path1, path2)
