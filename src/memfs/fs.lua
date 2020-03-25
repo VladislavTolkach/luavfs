@@ -13,9 +13,26 @@ local full_error = errno.full_error
 
 local MemFs = {}
 
+function Memfs:access(path, mode)
+   if not (mode == constants.F_OK or mode == constants.W_OK 
+      or mode == constants.R_OK or mode == constants.X_OK) then
+      return full_error(errno.EINVAL)
+   end
+
+   local node, err = node_m.find_node(self._stor, path)
+   if err then 
+      return full_error(err)
+   end
+
+   if path_m.is_dir(path) and not stat.is_dir(node.mode) then
+      return full_error(errno.ENOTDIR)
+   end
+
+   return true
+end
+
 MemFs.open = wrappers.open(function(self, path, flags, page_size)
    local file
-   path = path_m.normalize(path)
    local basename = path_m.basename(path)
    local dir_node, err = node_m.find_node(self._stor, path_m.dirname(path))  
    if err then 
@@ -53,7 +70,6 @@ MemFs.open = wrappers.open(function(self, path, flags, page_size)
 end)
 
 function MemFs:mkdir(path)
-   path = path_m.normalize(path)
    local dirname, basename = path_m.split(path)
    local dir_node, err = node_m.find_node(self._stor, dirname)
    if not dir_node then 
@@ -81,7 +97,6 @@ function MemFs:mkdir(path)
 end
 
 function MemFs:iterdir(path)
-   path = path_m.normalize(path)
    local node, err = node_m.find_node(self._stor, path)
    if not node then 
       return full_error(err)
@@ -96,7 +111,6 @@ function MemFs:iterdir(path)
 end
 
 function MemFs:rmdir(path)
-   path = path_m.normalize(path)
    local dirname, basename = path_m.split(path)
    local dir_node, err = node_m.find_node(self._stor, dirname)
    if err then 
@@ -135,7 +149,6 @@ function MemFs:rmdir(path)
 end
 
 function MemFs:stat(path)
-   path = path_m.normalize(path)
    local node, err = node_m.find_node(self._stor, path)
    if node then
       -- TODO 
@@ -158,6 +171,60 @@ function MemFs:stat(path)
    else
       return full_error(err)
    end
+end
+
+function MemFs:utime(path, atime, mtime)
+   local node, err = node_m.find_node(self._stor, path)
+   if node then 
+      if atime then
+         node.atime = atime
+      end
+      if mtime then
+         node.mtime = mtime
+      end
+      return true
+   else 
+      return full_error(err)
+   end
+end
+
+function MemFs:link(old_path, new_path)
+   return full_error(errno.EPERM)
+end
+
+
+function MemFs:unlink(path)
+   local dirname, basename = path_m.split(path)
+   local dir_node, err = node_m.find_node(self._stor, dirname)
+   if err then 
+      return full_error(err)
+   end
+
+   if not stat.is_dir(dir_node.mode) then
+      return full_error(errno.ENOTDIR)
+   end
+
+   local victim, err = node_m.lookup(dir_node, basename)
+   if err then 
+      return full_error(err)
+   end
+   if path_m.is_dir(path) or stat.is_dir(victim.mode) then
+      return full_error(errno.EISDIR)
+   end
+   
+   err = node_m.remove_node(dir_node, basename)
+   if not err then
+      local t = time()
+      dir_node.ctime = t
+      dir_node.mtime = t
+      victim.ctime = t
+      return true
+   else
+      return full_error(err)
+   end
+end
+
+function MemFs:rename(old_path, new_path)
 end
 
 local function create_storage(stor)

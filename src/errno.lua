@@ -1,4 +1,5 @@
 local errno = {
+   EPERM          = 1,
    ENOENT         = 2,
    EIO            = 5,
    EBADF          = 9,
@@ -17,6 +18,7 @@ local errno = {
 }
 
 local string_error = {
+   [errno.EPERM]        = "Operation not permitted",
    [errno.ENOENT]       = "No such file or directory",
    [errno.EIO]          = "I/O error",
    [errno.EBADF]        = "Bad file number",

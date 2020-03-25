@@ -10,6 +10,11 @@ local constants = {
    SEEK_SET = 1,
    SEEK_CUR = 2,
    SEEK_END = 3,
+
+   R_OK = 1,
+   W_OK = 2, 
+   X_OK = 3, 
+   F_OK = 4,
 }
 
 return constants

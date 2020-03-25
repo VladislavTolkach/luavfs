@@ -61,8 +61,12 @@ end
 
 function WrapFs:utime(path, atime, mtime)
    errutils.type_check("utime", 1, old_path, "string")
-   errutils.type_check("utime", 2, atime, "number")
-   errutils.type_check("utime", 3, mtime, "number")
+   if atime then
+      errutils.type_check("utime", 2, atime, "number")
+   end
+   if mtime then
+      errutils.type_check("utime", 3, mtime, "number")
+   end
    if not path_m.is_valid(path) then return errno.full_error(errno.EINVAL) end
    path = path_m.normalize(path)
    local fs, path = self:_delegate(path)
