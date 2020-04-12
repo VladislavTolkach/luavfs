@@ -84,38 +84,38 @@ end
 ## Filesystems
 - `OsFs`: Provides access to the file system of your operating system. It's a wrapper over `Lua I/O` and `lfs` and therefore it has a similar behavior.
 
-If you initialize it with some *path*, then you will not be able to access your OS file system below the *path*(unless there are symlinks after the *path*):
-```lua
-local fs = luavfs.osfs("/dir1/dir2")
+  If you initialize it with some *path*, then you will not be able to access your OS file system below the *path*(unless there are symlinks after the *path*):
+  ```lua
+  local fs = luavfs.osfs("/dir1/dir2")
 
-local file = fs:open("../../file")
--- it's the same with
-local file = fs:open("/file")
-```
+  local file = fs:open("../../file")
+  -- it's the same with
+  local file = fs:open("/file")
+  ```
 - `MemFs`: In-memory file system that is implemented without third-party libraries and does not even use `Lua I/O` and therefore it can be used when there is no direct access to the OS. 
 
-Also it used *storage* that fully describes the state of file system. *storage* can be serialized using serializers that ignore metatables.
+  Also it used *storage* that fully describes the state of file system. *storage* can be serialized using serializers that ignore metatables.
 
 - `MountFs`: Allows you to build a file system from other file systems.
 
-It must be initialized by any file system that will be used like a root file system. You cannot mount another file system in *path* that does not exist in the root file system. 
-```lua
--- Create an empty storage
-local stor = {}
+  It must be initialized by any file system that will be used like a root file system. You cannot mount another file system in *path* that does not exist in the root file system. 
+  ```lua
+  -- Create an empty storage
+  local stor = {}
 
--- Initialize MemFs 
-local memfs = luavfs.memfs(stor)
+  -- Initialize MemFs 
+  local memfs = luavfs.memfs(stor)
 
-local fs = luavfs.mountfs() -- Failed
-fs:mount(memfs, "/", {}) -- Ok
+  local fs = luavfs.mountfs() -- Failed
+  fs:mount(memfs, "/", {}) -- Ok
 
-local osfs = luavfs.osfs(".")
+  local osfs = luavfs.osfs(".")
 
-fs:mount(osfs, "/", {}) -- Failed. Busy mount point
-fs:mount(osfs, "/dir" {}) -- Failed. Path does not exist because memfs is empty and it's used like a root file system
-fs:mkdir("/dir")
-fs:mount(osfs, "/dir" {}) -- Ok
-```
+  fs:mount(osfs, "/", {}) -- Failed. Busy mount point
+  fs:mount(osfs, "/dir" {}) -- Failed. Path does not exist because memfs is empty and it's used like a root file system
+  fs:mkdir("/dir")
+  fs:mount(osfs, "/dir" {}) -- Ok
+  ```
 ## For developers
 
 ### Implement your own file system 
