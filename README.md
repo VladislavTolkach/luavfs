@@ -99,4 +99,67 @@ Also it used *storage* that fully describes the state of file system. *storage* 
 - `MountFs`: Allows you to build a file system from other file systems.
 
 It must be initialized by any file system that will be used like a root file system. You cannot mount another file system in *path* that does not exist in the root file system. 
+```lua
+-- Create an empty storage
+local stor = {}
 
+-- Initialize MemFs 
+local memfs = luavfs.memfs(stor)
+
+local fs = luavfs.mountfs() -- Failed
+fs:mount(memfs, "/", {}) -- Ok
+
+local osfs = luavfs.osfs(".")
+
+fs:mount(osfs, "/", {}) -- Failed. Busy mount point
+fs:mount(osfs, "/dir" {}) -- Failed. Path does not exist because memfs is empty and it's used like a root file system
+fs:mkdir("/dir")
+fs:mount(osfs, "/dir" {}) -- Ok
+```
+## For developers
+
+### Implement your own file system 
+You can use several useful modules:
+- `src/wrapfs.lua`
+  - You can use `WrapFs` as a wrapper that will check args and normalize paths.
+  Instead of this:
+  ```lua
+  ...
+  function YourFs:mkdir(path)
+    errutils.type_check("mkdir", 1, "string")
+    path = path_m.normalize(path)
+    
+    ...mkdir implementation
+  end
+  ...
+  function YourFs.new(...)
+    local fs = {}
+    
+    ...construct
+
+    return fs
+  end
+  
+  ```
+  ...you can do this:
+  ```lua
+  ...
+  function YourFs:mkdir(path)
+    ...mkdir implementation
+  end
+  ...
+  function YourFs.new(...)
+    local fs = {}
+    
+    ...construct
+
+    return WrapFs(fs)
+  end
+  
+  ```
+  - Or you can use `WrapFs` as a parent class and inherit from it. This is useful for file systems which handle another file systems. You just need to override `_delegete(path)` method. 
+- `src/wrappers.lua`: Some usefull wrappers for `File` methods.
+- `src/path.lua`: Should be used for all path manipulations.
+- `src/errutils.lua`: Error patterns and type checking.
+- `src/errno.lua`: Errno
+- `src/fdata.lua`: Used to represent a file in memory.
