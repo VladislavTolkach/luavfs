@@ -120,8 +120,8 @@ function wrappers.seek(f)
       end
 
       local offset = offset or 0
-      errutils.type_check("seek", 1, type(whence), "string")
-      errutils.type_check("seek", 2, type(offset), "number")
+      errutils.type_check("seek", 1, whence, "string")
+      errutils.type_check("seek", 2, offset, "number")
 
       opt = seek_option_lookup[whence]
       if opt then

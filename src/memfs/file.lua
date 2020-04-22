@@ -7,6 +7,25 @@ local wrappers = require("wrappers")
 
 local file_m = {}
 
+local file_methods = {
+   write = true,
+   read = true,
+   seek = true,
+   flush = true,
+   close = true,
+}
+
+--[[
+local closed_file_mt = {
+   __index = function(k, v)
+      if file_methods[k] then 
+         return function()
+            return errno.full_error(errno.EBADF)
+         end
+      end
+   end,
+}
+]]
 
 local function write(file, data)
    local n = file._node
@@ -67,8 +86,12 @@ local function seek(file, opt, offset)
    end
 end
 
+local function flush(file, ...)
+   return true
+end
+
 local function badf(file, ...)
-   return nil, errno.EBADF, errno.str_error(errno.EBADF)
+   return errno.full_error(errno.EBADF)
 end
 
 local function close(file)
@@ -76,11 +99,10 @@ local function close(file)
    file._node = nil
    file._fs = nil
    file._fd = nil
-   file.write = badf
-   file.read = badf
-   file.seek = badf 
-   file.flush = badf
-   file.close = badf
+   --setmetatable(file, closed_file_mt)
+   for k, _ in pairs(file_methods) do
+      file[k] = badf
+   end
    return true
 end
 
@@ -120,7 +142,7 @@ function file_m.new(fs, node, flags)
 
    -- TODO Mb add buffers
    -- Flush
-   file.flush = function() end
+   file.flush = flush
 
    -- Close
    file.close = close

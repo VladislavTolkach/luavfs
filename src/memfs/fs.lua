@@ -7,13 +7,14 @@ local time = require("time")
 local wrappers = require("wrappers")
 local node_m = require("memfs.node")
 local file_m = require("memfs.file")
+local storage_m = require("memfs.storage")
 local WrapFs = require("wrapfs")
 
 local full_error = errno.full_error
 
 local MemFs = {}
 
-function Memfs:access(path, mode)
+function MemFs:access(path, mode)
    if not (mode == constants.F_OK or mode == constants.W_OK 
       or mode == constants.R_OK or mode == constants.X_OK) then
       return full_error(errno.EINVAL)
@@ -227,18 +228,19 @@ end
 function MemFs:rename(old_path, new_path)
 end
 
-local function create_storage(stor)
-   stor.root = node_m.root() 
-   stor.cfg = {}
-   stor.cfg.page_size = 4096
-   return stor
-end
-
 function MemFs.new(storage, config)
+   if not next(storage) then
+      storage_m.init(storage, config)
+   else 
+      if not storage_m.is_valid(storage) then
+         return full_error(errno.EINVAL)
+      end
+   end
+
    local fs = {}
-   fs._stor = create_storage(storage)
+   fs._stor = storage
    fs._files = {}
-   fs._cfg = config --TODO
+   fs._conf = config --TODO
    setmetatable(fs, {__index = MemFs})
    return WrapFs(fs)
 end

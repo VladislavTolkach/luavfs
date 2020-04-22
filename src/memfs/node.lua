@@ -28,7 +28,7 @@ function node_m.root()
 end
 
 function node_m.add_node(stor, dir_node, name, mode, page_size)
-   local page_size = page_size or stor.cfg.page_size
+   local page_size = page_size or stor.conf.page_size
    local node = new_node(mode, page_size) 
    dir_node.childs[name] = node
    return node
